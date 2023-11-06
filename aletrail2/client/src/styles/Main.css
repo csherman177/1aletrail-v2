@@ -1,0 +1,7 @@
+body {
+    height: 100%;
+    background-image: url('../assets/white-wood-bkgd.jpeg');
+    background-size: 1920px;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}

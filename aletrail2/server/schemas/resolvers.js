@@ -1,6 +1,6 @@
 const { AuthenticationError } = require("apollo-server-express");
-const { User, Comment } = require("../../server/models");
-const { signToken } = require("../utils/auth");
+const { User, Comment } = require("../models");
+const { signToken } = require("../../server/utils/auth");
 
 // Map resolvers to query on typedefs
 const resolvers = {

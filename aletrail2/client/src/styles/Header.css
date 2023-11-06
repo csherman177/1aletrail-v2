@@ -1,0 +1,48 @@
+header {
+    background: rgb(50, 50, 50);
+    background: linear-gradient(180deg, rgb(50, 50, 50) 90%, rgb(35, 35, 35) 100%);
+}
+
+.header-title {
+    color: white;
+    font-variant: small-caps;
+    font-size: 48pt;
+}
+
+.header-text {
+    color: white;
+}
+
+.logo {
+    width: 300px;
+    height: 300px;
+}
+
+.navbar {
+    display: flex;
+}
+
+.nav-item {
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    color: rgb(211, 166, 16);
+    font-size: 24pt;
+    padding: 0px 30px 0px 30px;
+}
+
+.nav-item:hover {
+    text-decoration: none;
+    color: rgb(255, 224, 120) !important;
+}
+
+.nav-item:active {
+    text-decoration: none;
+    color: rgb(211, 166, 16) !important;
+}
+
+@media screen and (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+    }
+}
