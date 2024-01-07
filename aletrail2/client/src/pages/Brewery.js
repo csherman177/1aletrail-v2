@@ -16,8 +16,12 @@ export default function Brewery() {
   const [brewery, setBrewery] = useState({});
 
   const fetchBrewery = async () => {
-    const b = await API.searchById(breweryId);
-    setBrewery(b);
+    try {
+      const b = await API.searchById(breweryId);
+      setBrewery(b);
+    } catch (error) {
+      console.error("Error fetching brewery:", error);
+    }
   };
   console.log("brewery ID before effect");
 
@@ -38,24 +42,44 @@ export default function Brewery() {
     event.preventDefault();
     console.log("Before GraphQL Request");
     console.log("text:", text);
-    console.log("brewery.id:", brewery.id);
-    console.log("brewery.name:", brewery.name);
 
-    try {
-      const { data } = await addComment({
-        variables: {
-          text,
-          breweryId: brewery.id,
-          breweryName: brewery.name,
-        },
-      });
+    // Check if brewery is defined before accessing its properties
+    if (brewery && brewery.id && brewery.name) {
+      console.log("brewery.id:", brewery.id);
+      console.log("brewery.name:", brewery.name);
 
-      console.log("After GraphQL Request");
-      console.log("Response data:", data);
+      try {
+        const { data } = await addComment({
+          variables: {
+            text,
+            breweryId: brewery.id,
+            breweryName: brewery.name,
+          },
+        });
+        console.log("After GraphQL Request");
+        console.log("Response data:", data);
 
-      setText(""); // Clear the input field after successful submission
-    } catch (error) {
-      console.error("Mutation error:", error);
+        setText(""); // Clear the input field after successful submission
+      } catch (error) {
+        console.error("Mutation error:", error);
+
+        // Log more details about the error
+        if (error.graphQLErrors) {
+          error.graphQLErrors.forEach((graphQLError) => {
+            console.error("GraphQL Error:", graphQLError);
+          });
+        }
+
+        if (error.networkError) {
+          console.error("Network Error:", error.networkError);
+        }
+
+        if (error.message) {
+          console.error("Error Message:", error.message);
+        }
+      }
+    } else {
+      console.error("Brewery data is not fully loaded yet.");
     }
   };
 

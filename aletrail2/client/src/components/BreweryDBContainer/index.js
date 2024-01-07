@@ -1,5 +1,5 @@
-import React from "react";
-import { useState, useEffect } from "react";
+// BreweryDBContainer.js
+import React, { useState, useEffect } from "react";
 import SearchForm from "../SearchForm";
 import SearchList from "../SearchList";
 import API from "../../utils/API";
@@ -9,15 +9,9 @@ export default function BreweryDBContainer() {
   const [result, setResult] = useState([]);
   const [search, setSearch] = useState("");
 
-  // const searchBrewery = (query) =>
-  //   API.search(query)
-  //     .then((res) => res.json())
-  //     .then((data) => setResult(data))
-  //     .catch((err) => console.log(err));
-
   // Default search
   const initialSearch = async () => {
-    const breweries = API.search("Colorado");
+    const breweries = await API.search("Colorado");
     setResult(breweries);
   };
   useEffect(() => {
@@ -44,20 +38,19 @@ export default function BreweryDBContainer() {
       </div>
       <div>
         {result.length ? (
-          result.map((brewery) => {
-            return (
-              <SearchList
-                id={brewery.id}
-                name={brewery.name}
-                street={brewery.street}
-                city={brewery.city}
-                state={brewery.state}
-                postal_code={brewery.postal_code}
-                phone={brewery.phone}
-                website_url={brewery.website_url}
-              />
-            );
-          })
+          result.map((brewery) => (
+            <SearchList
+              key={brewery.id}
+              id={brewery.id}
+              name={brewery.name}
+              street={brewery.street}
+              city={brewery.city}
+              state={brewery.state}
+              postal_code={brewery.postal_code}
+              phone={brewery.phone}
+              website_url={brewery.website_url}
+            />
+          ))
         ) : (
           <h3>No Results to display</h3>
         )}

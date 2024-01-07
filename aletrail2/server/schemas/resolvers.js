@@ -47,7 +47,7 @@ const resolvers = {
 
       return { token, user };
     },
-    addComment: async ({ text, breweryId, breweryName }, context) => {
+    addComment: async (parent, { text, breweryId, breweryName }, context) => {
       if (context.user) {
         console.log("Received data:", text, breweryId, breweryName);
         const comment = await Comment.create({

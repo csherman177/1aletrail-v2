@@ -12,7 +12,7 @@ const typeDefs = gql`
   type Comment {
     _id: ID
     text: String
-    breweryId: String
+    breweryId: ID
     breweryName: String
     user: User
   }
@@ -32,7 +32,7 @@ const typeDefs = gql`
   type Mutation {
     addUser(username: String!, email: String!, password: String!): Auth
     login(email: String!, password: String!): Auth
-    addComment(text: String!, breweryId: String!, breweryName: String!): Comment
+    addComment(text: String!, breweryId: ID!, breweryName: String!): Comment
   }
 `;
 
