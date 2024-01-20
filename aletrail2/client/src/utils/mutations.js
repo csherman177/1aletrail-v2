@@ -35,7 +35,6 @@ export const ADD_COMMENT = gql`
       breweryId
       breweryName
       user
-      createdAt
     }
   }
 `;

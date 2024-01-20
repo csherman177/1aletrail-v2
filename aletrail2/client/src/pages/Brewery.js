@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import Rating from "react-rating";
 import { useParams } from "react-router-dom";
 import { ADD_COMMENT } from "../utils/mutations";
 import { useMutation } from "@apollo/client";
@@ -8,81 +7,55 @@ import AuthService from "../utils/auth";
 import "../styles/Card.css";
 
 export default function Brewery() {
-  // Fetch single brewery
+  const [text, setText] = useState("");
+  const [brewery, setBrewery] = useState({});
+  const [userData, setUserData] = useState(null);
+  const [addComment, { error }] = useMutation(ADD_COMMENT, {
+    update(cache, { data: { addComment } }) {
+      // Implement cache update logic if needed
+    },
+    onError: (error) => {
+      console.error("GraphQL error:", error);
+    },
+  });
+  const [loading, setLoading] = useState(true);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
+
   const { breweryId } = useParams();
 
-  console.log(breweryId);
-
-  const [brewery, setBrewery] = useState({});
-
-  const fetchBrewery = async () => {
-    try {
-      const b = await API.searchById(breweryId);
-      setBrewery(b);
-    } catch (error) {
-      console.error("Error fetching brewery:", error);
-    }
-  };
-  console.log("brewery ID before effect");
-
   useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const user = await AuthService.getUser();
+        console.log("User data:", user); // Log user data
+
+        if (user && user.data) {
+          setUserData(user.data);
+        } else {
+          console.error("User data is not available.");
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+
+    // Fetch user data before fetching brewery data
+    fetchUserData();
+
+    // Fetch brewery data on component mount
     fetchBrewery();
   }, [breweryId]);
 
-  console.log("brewery ID after effect");
-
-  // POST new comment
-  const [text, setText] = useState("");
-  console.log("text state initialized:", text);
-
-  const [addComment, { error, data }] = useMutation(ADD_COMMENT);
-  console.log("useMutation hook initialized:", addComment);
-
-  const handleFormSubmit = async (event) => {
-    event.preventDefault();
-    console.log("Before GraphQL Request");
-    console.log("text:", text);
-
-    // Check if brewery is defined before accessing its properties
-    if (brewery && brewery.id && brewery.name) {
-      console.log("brewery.id:", brewery.id);
-      console.log("brewery.name:", brewery.name);
-
-      try {
-        const { data } = await addComment({
-          variables: {
-            text,
-            breweryId: brewery.id,
-            breweryName: brewery.name,
-            user: brewery.user,
-          },
-        });
-        console.log("After GraphQL Request");
-        console.log("Response data:", data);
-
-        console.log("Before set test");
-        setText(""); // Clear the input field after successful submission
-      } catch (error) {
-        console.log("After set test");
-        console.error("Mutation error:", error);
-
-        // Log more details about the error
-        if (error.graphQLErrors) {
-          error.graphQLErrors.forEach((graphQLError) => {
-            console.error("GraphQL Error:", graphQLError);
-          });
-        }
-
-        if (error.networkError) {
-          console.error("Network Error:", error.networkError);
-        }
-
-        if (error.message) {
-          console.error("Error Message:", error.message);
-        }
-      }
-    } else {
-      console.error("Brewery data is not fully loaded yet.");
+  const fetchBrewery = async () => {
+    try {
+      console.log("Fetching brewery data...");
+      const b = await API.searchById(breweryId);
+      console.log("Fetched brewery data:", b);
+      setBrewery(b);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching brewery:", error);
+      setLoading(false);
     }
   };
 
@@ -93,6 +66,55 @@ export default function Brewery() {
       setText(value);
     }
   };
+
+  const handleFormSubmit = async (event) => {
+    event.preventDefault();
+    setLoadingSubmit(true);
+
+    // Fetch brewery data before submission if not loaded
+    if (!brewery.id) {
+      console.log("Fetching brewery data before submission...");
+      await fetchBrewery();
+      console.log("Fetched brewery data before submission:", brewery);
+    }
+
+    // Check if brewery is fully loaded with required properties
+    if (brewery && brewery.id && brewery.name) {
+      console.log("Brewery data is fully loaded:", brewery);
+
+      if (userData && userData.id && userData.username) {
+        try {
+          console.log("Submitting form...");
+          const user = AuthService.getUser();
+          const { data } = await addComment({
+            variables: {
+              text,
+              breweryId: brewery.id,
+              breweryName: brewery.name,
+              user: {
+                id: user.id,
+                username: user.username,
+              },
+            },
+          });
+          console.log("Form submitted. Response data:", data);
+          setText("");
+        } catch (error) {
+          console.error("Mutation error:", error);
+        } finally {
+          setLoadingSubmit(false);
+        }
+      } else {
+        console.error("User data is not fully loaded or available.");
+        setLoadingSubmit(false);
+      }
+    } else {
+      console.error("Brewery data is not fully loaded yet.");
+      setLoadingSubmit(false);
+    }
+  };
+
+  console.log("Rendering with brewery data:", brewery);
 
   return (
     <div>
@@ -109,59 +131,34 @@ export default function Brewery() {
           <h5>
             Address: {brewery.street}, {brewery.city}, {brewery.state}
           </h5>
-          <div className="text-center brew-card p-4">
-            <h5>
-              Have you visited {brewery.name}? Let them know what you think!
-            </h5>
-            <div className="m-3">
-              <Rating
-                start={0}
-                stop={5}
-                step={1}
-                initialRating={0}
-                readonly={false}
-                direction={"ltr"}
-                fractions={2}
-              />
+          {loading ? (
+            <p>Loading...</p>
+          ) : (
+            <div className="text-center brew-card p-4">
+              <h5>
+                Have you visited {brewery.name}? Let them know what you think!
+              </h5>
+              <div className="m-3">{/* Add Rating component */}</div>
+              {!loading && (
+                <form onSubmit={handleFormSubmit} className="card-body">
+                  <div className="form-item row m-3">
+                    <textarea
+                      className="form-input"
+                      placeholder="Leave a comment"
+                      name="text"
+                      value={text}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div className="form-item row m-3">
+                    <button type="submit" disabled={loadingSubmit}>
+                      {loadingSubmit ? "Submitting..." : "Submit Comment"}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
-            <form onSubmit={handleFormSubmit} className="card-body">
-              <div className="form-item row m-3">
-                <textarea
-                  className="form-input"
-                  placeholder="Leave a comment"
-                  name="text"
-                  type="textarea"
-                  value={text}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="form-item row">
-                <input
-                  className="form-input"
-                  name="breweryId"
-                  type="text"
-                  value={brewery.id}
-                  hidden
-                />
-              </div>
-              <div className="form-item row">
-                <input
-                  className="form-input"
-                  name="breweryName"
-                  type="text"
-                  value={brewery.name}
-                  hidden
-                />
-              </div>
-              <button
-                className="form-btn"
-                style={{ cursor: "pointer" }}
-                type="submit"
-              >
-                Submit
-              </button>
-            </form>
-          </div>
+          )}
         </div>
       </div>
     </div>
