@@ -48,8 +48,9 @@ const resolvers = {
       return { token, user };
     },
     addComment: async (parent, { text, breweryId, breweryName }, context) => {
+      console.log("Received data:1", context);
       if (context.user) {
-        console.log("Received data:", text, breweryId, breweryName);
+        console.log("Received data2:", text, breweryId, breweryName);
         const comment = await Comment.create({
           text,
           breweryId,
@@ -57,10 +58,10 @@ const resolvers = {
           user: context.user.username,
         });
 
-        await User.findOneAndUpdate(
-          { _id: context.user._id },
-          { $addToSet: { comments: comment._id } }
-        );
+        //await User.findOneAndUpdate(
+        // { _id: context.user._id },
+        // { $addToSet: { comments: comment._id } }
+        //);
 
         return { comment };
       }

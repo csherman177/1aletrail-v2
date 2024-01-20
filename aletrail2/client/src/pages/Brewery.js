@@ -35,7 +35,7 @@ export default function Brewery() {
   const [text, setText] = useState("");
   console.log("text state initialized:", text);
 
-  const [addComment] = useMutation(ADD_COMMENT);
+  const [addComment, { error, data }] = useMutation(ADD_COMMENT);
   console.log("useMutation hook initialized:", addComment);
 
   const handleFormSubmit = async (event) => {
@@ -54,13 +54,16 @@ export default function Brewery() {
             text,
             breweryId: brewery.id,
             breweryName: brewery.name,
+            user: brewery.user,
           },
         });
         console.log("After GraphQL Request");
         console.log("Response data:", data);
 
+        console.log("Before set test");
         setText(""); // Clear the input field after successful submission
       } catch (error) {
+        console.log("After set test");
         console.error("Mutation error:", error);
 
         // Log more details about the error
