@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Link } from "react-router-dom";
 
 const CommentsList = ({ comments, title }) => {
   if (!comments.length) {
@@ -14,10 +14,9 @@ const CommentsList = ({ comments, title }) => {
           comments.map((comment) => (
             <div key={comment._id} className="col">
               <div className="brew-card mb-3">
-                <h4>Commented by {comment.user.username} at 
-                  <Link 
-                    to={`/breweries/${comment.breweryId}`}
-                  >
+                <h4>
+                  Commented by {comment.user.username} at
+                  <Link to={`/breweries/${comment.breweryId}`}>
                     {comment.breweryName}
                   </Link>
                 </h4>

@@ -47,27 +47,35 @@ const resolvers = {
 
       return { token, user };
     },
-    addComment: async (parent, { text, breweryId, breweryName }, context) => {
-      console.log("Received data:1", context);
+    addComment: async (
+      parent,
+      { text, breweryId, breweryName, userId },
+      context
+    ) => {
+      console.log("Received data:", text, breweryId, breweryName, userId);
       if (context.user) {
-        console.log("Received data2:", text, breweryId, breweryName);
-        const comment = await Comment.create({
-          text,
-          breweryId,
-          breweryName,
-          user: context.user.username,
-        });
+        try {
+          const comment = await Comment.create({
+            text,
+            breweryId,
+            breweryName,
+            user: context.user.username,
+          });
 
-        //await User.findOneAndUpdate(
-        // { _id: context.user._id },
-        // { $addToSet: { comments: comment._id } }
-        //);
+          // Optionally, you can associate the comment with the user
+          await User.findOneAndUpdate(
+            { _id: userId }, // Ensure to use the correct field for user ID
+            { $addToSet: { comments: comment._id } }
+          );
 
-        return { comment };
+          return comment;
+        } catch (error) {
+          console.error("Error adding comment:", error);
+          throw new Error("Failed to add comment.");
+        }
       }
       throw new AuthenticationError("You need to be logged in!");
     },
   },
 };
-
 module.exports = resolvers;

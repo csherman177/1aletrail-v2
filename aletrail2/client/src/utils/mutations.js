@@ -28,8 +28,18 @@ export const ADD_USER = gql`
 `;
 
 export const ADD_COMMENT = gql`
-  mutation addComment($text: String!, $breweryId: ID!, $breweryName: String!) {
-    addComment(text: $text, breweryId: $breweryId, breweryName: $breweryName) {
+  mutation addComment(
+    $text: String!
+    $breweryId: ID!
+    $breweryName: String!
+    $userId: ID!
+  ) {
+    addComment(
+      text: $text
+      breweryId: $breweryId
+      breweryName: $breweryName
+      userId: $userId
+    ) {
       _id
       text
       breweryId

@@ -5,17 +5,17 @@ import { useMutation } from "@apollo/client";
 import API from "../utils/API";
 import AuthService from "../utils/auth";
 import "../styles/Card.css";
+import jwtDecode from "jwt-decode";
 
 export default function Brewery() {
   const [text, setText] = useState("");
   const [brewery, setBrewery] = useState({});
   const [userData, setUserData] = useState(null);
   const [addComment, { error }] = useMutation(ADD_COMMENT, {
-    update(cache, { data: { addComment } }) {
-      // Implement cache update logic if needed
-    },
-    onError: (error) => {
-      console.error("GraphQL error:", error);
+    context: {
+      headers: {
+        Authorization: `Bearer ${AuthService.getToken()}`,
+      },
     },
   });
   const [loading, setLoading] = useState(true);
@@ -23,28 +23,33 @@ export default function Brewery() {
 
   const { breweryId } = useParams();
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const user = await AuthService.getUser();
-        console.log("User data:", user); // Log user data
+  const fetchUserData = async () => {
+    try {
+      const token = AuthService.getToken();
+      console.log("Token:", token);
 
-        if (user && user.data) {
-          setUserData(user.data);
-        } else {
-          console.error("User data is not available.");
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
+      if (!token) {
+        console.error("Token is not present.");
+        return;
       }
-    };
 
-    // Fetch user data before fetching brewery data
-    fetchUserData();
+      const isTokenExpired = AuthService.isTokenExpired(token);
+      console.log("Is token expired:", isTokenExpired);
 
-    // Fetch brewery data on component mount
-    fetchBrewery();
-  }, [breweryId]);
+      if (isTokenExpired) {
+        console.error("Token is expired.");
+        return;
+      }
+
+      const user = await AuthService.getUser();
+      console.log("User data1:", user);
+      setUserData(user);
+      return user;
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      throw error;
+    }
+  };
 
   const fetchBrewery = async () => {
     try {
@@ -52,12 +57,32 @@ export default function Brewery() {
       const b = await API.searchById(breweryId);
       console.log("Fetched brewery data:", b);
       setBrewery(b);
-      setLoading(false);
+      return b;
     } catch (error) {
       console.error("Error fetching brewery:", error);
+      throw error;
+    } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    console.log("Before data fetching - loading:", loading);
+
+    const fetchData = async () => {
+      try {
+        const user = await fetchUserData();
+        setUserData(user);
+
+        const breweryData = await fetchBrewery();
+        setBrewery(breweryData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
+  }, [breweryId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -69,52 +94,78 @@ export default function Brewery() {
 
   const handleFormSubmit = async (event) => {
     event.preventDefault();
-    setLoadingSubmit(true);
 
-    // Fetch brewery data before submission if not loaded
-    if (!brewery.id) {
-      console.log("Fetching brewery data before submission...");
-      await fetchBrewery();
-      console.log("Fetched brewery data before submission:", brewery);
+    if (loading) {
+      console.log("Data is still loading. Please wait.");
+      return;
     }
 
-    // Check if brewery is fully loaded with required properties
-    if (brewery && brewery.id && brewery.name) {
-      console.log("Brewery data is fully loaded:", brewery);
+    try {
+      const user = await fetchUserData();
 
-      if (userData && userData.id && userData.username) {
-        try {
-          console.log("Submitting form...");
-          const user = AuthService.getUser();
-          const { data } = await addComment({
-            variables: {
+      if (user && user.data._id && user.data.username) {
+        console.log("User Data2", user);
+
+        if (brewery && brewery.id && brewery.name) {
+          console.log("Brewery data is fully loaded:", brewery);
+
+          try {
+            console.log("Submitting form...");
+
+            const authToken = AuthService.getToken();
+
+            const variables = {
               text,
               breweryId: brewery.id,
               breweryName: brewery.name,
-              user: {
-                id: user.id,
-                username: user.username,
-              },
-            },
-          });
-          console.log("Form submitted. Response data:", data);
-          setText("");
-        } catch (error) {
-          console.error("Mutation error:", error);
-        } finally {
+              userId: user.data._id,
+            };
+
+            console.log("Variables for addComment mutation:", variables);
+
+            const response = await addComment({
+              variables,
+            });
+
+            console.log("Form submitted. Response data:", response);
+
+            if (response && response.data && response.data.addComment) {
+              console.log(
+                "addComment mutation response:",
+                response.data.addComment
+              );
+            } else {
+              console.error(
+                "Mutation response does not contain 'addComment'.",
+                response
+              );
+            }
+
+            setText("");
+          } catch (error) {
+            console.error("Mutation error:", error);
+            throw error;
+          } finally {
+            setLoadingSubmit(false);
+            console.log(
+              "After form submission - loadingSubmit:",
+              loadingSubmit
+            );
+          }
+        } else {
+          console.error("Brewery data is not fully loaded yet.");
           setLoadingSubmit(false);
         }
       } else {
         console.error("User data is not fully loaded or available.");
         setLoadingSubmit(false);
       }
-    } else {
-      console.error("Brewery data is not fully loaded yet.");
-      setLoadingSubmit(false);
+
+      console.log("Rendering with brewery data:", brewery);
+    } catch (error) {
+      console.error("Error during form submission:", error);
     }
   };
-
-  console.log("Rendering with brewery data:", brewery);
 
   return (
     <div>
